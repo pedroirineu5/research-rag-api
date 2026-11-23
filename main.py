@@ -18,8 +18,13 @@ def minimo_maximo_dados(faces: Annotated[int, Query(ge= 2)],)->dict[str, int]:
         "máximo": faces
         }
 
+@app.post("/dados/intervalo")
+def dados(face)
 
 @app.get("/teste")
-def minimo_teste(quantifa):
-    return {"mensagem": "olá"}
+def minimo_teste(quantifa: Annotated[int, Query(ge=1)],)->dict[str,int]:
+    return {"mensagem": quantifa}
 
+@app.get("/melhorando")
+def testando_teste(mensagem: Annotated[str, Query])-> dict[str,str]:
+    return{"mensagem":mensagem}

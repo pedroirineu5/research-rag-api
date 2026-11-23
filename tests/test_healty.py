@@ -29,3 +29,4 @@ def test_teste_com_query_com_parametro():
     response = client.get("/teste?quantifa=3")
 
     assert not response.status_code == 422
+    assert response.json() == {"mensagem": 3}
