@@ -1,9 +1,14 @@
 from fastapi import FastAPI, Query
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import Field, BaseModel
 
 app = FastAPI()
+
+class MaximoDados(BaseModel):
+    faces: int = Field(ge=2, le=100)
+    quantidade: int = Field(ge=1)
+
 
 @app.get("/health")
 def get_health():
@@ -21,16 +26,14 @@ def minimo_maximo_dados(faces: Annotated[int, Query(ge= 2)],)->dict[str, int]:
         }
 
 
-# Quando for um envio (POST) pelo proprio json tem que ser usando fields ja que é um campo do model
+# Quando for um envio (POST) pelo proprio json tem que ser usando fields ja que é um campo do model, outra coisa devemos criar um basemodel
 
 @app.post("/dados/intervalo")
-def dados(face: int = Field(ge=2, le=100), quantidade: int = Field(ge=1)):
-
-    maximo = face * quantidade
+def dados(pedido: MaximoDados):
 
     return {
-        "minimo": quantidade,
-        "máximo": maximo,
+        "minimo": pedido.quantidade,
+        "máximo": pedido.faces * pedido.quantidade,
     }
 
 # aqui por ser um GET o query param está sendo o "filtro" valida o valor pela URL.

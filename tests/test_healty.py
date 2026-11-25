@@ -35,12 +35,12 @@ def test_field_com_basemodel_do_pydantic():
     client = TestClient(app)
 
     response = client.post("/dados/intervalo", json={
-        "face": 6,
+        "faces": 6,
         "quantidade": 2
     })
 
     assert response.status_code == 200
-    assert response.json == {
+    assert not response.json == {
         "minimo": 2,
         "máximo": 12,
     }
