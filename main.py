@@ -1,43 +1,18 @@
-from fastapi import FastAPI, Query
 from typing import Annotated
 
-from pydantic import Field
+from fastapi import FastAPI, Query
+from pydantic import BaseModel, Field
 
-app = FastAPI()
+from app.accounts.router import router as accounts_router
+from app.chat.router import router as chat_router
+from app.chat.router import systems_router
+
+app = FastAPI(title="Research RAG API")
+app.include_router(accounts_router)
+app.include_router(chat_router)
+app.include_router(systems_router)
+
 
 @app.get("/health")
-def get_health():
+def get_health() -> dict[str, str]:
     return {"status": "ok"}
-
-@app.get("/ingressos")
-def consultar_ingressos(quantidade: Annotated[int, Query(ge=1)],)->dict[str,int]:
-    return {"quantidade": quantidade}
-
-@app.get("/dados/intervalo")
-def minimo_maximo_dados(faces: Annotated[int, Query(ge= 2)],)->dict[str, int]:
-    return {
-        "mínimo": 1,
-        "máximo": faces
-        }
-
-
-# Quando for um envio (POST) pelo proprio json tem que ser usando fields ja que é um campo do model
-
-@app.post("/dados/intervalo")
-def dados(face: int = Field(ge=2, le=100), quantidade: int = Field(ge=1)):
-
-    maximo = face * quantidade
-
-    return {
-        "minimo": quantidade,
-        "máximo": maximo,
-    }
-
-# aqui por ser um GET o query param está sendo o "filtro" valida o valor pela URL.
-@app.get("/teste")
-def minimo_teste(quantifa: Annotated[int, Query(ge=1)],)->dict[str,int]:
-    return {"mensagem": quantifa}
-
-@app.get("/melhorando")
-def testando_teste(mensagem: Annotated[str, Query])-> dict[str,str]:
-    return{"mensagem":mensagem}
