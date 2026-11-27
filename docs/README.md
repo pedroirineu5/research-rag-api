@@ -1,6 +1,6 @@
 # Documentação — Chatbot de RPG com IA + RAG
 
-API em FastAPI para um chatbot que responde dúvidas de regras e orienta a criação de personagens de RPG de mesa, com base nos livros de regras de **2 sistemas**. A recuperação de trechos (RAG) usa o **File Search da OpenAI**.
+API em FastAPI para um chatbot que responde dúvidas de regras e orienta a criação de personagens de RPG de mesa, com base no **Dungeons & Dragons SRD 5.2.1**. A recuperação de trechos (RAG) usa o **File Search da OpenAI**.
 
 > Contexto: projeto para um **artigo aplicado**. O objetivo é resolver o problema rapidamente com tecnologia disponível e avaliar o resultado com jogadores reais.
 
@@ -18,8 +18,7 @@ flowchart LR
     U["Usuário / Frontend Next.js (Fase 4)"] -->|JWT| API["FastAPI"]
     API --> DB[("PostgreSQL: usuários, sistemas, conversas, mensagens, feedback")]
     API -->|"Responses API + file_search"| OAI["OpenAI"]
-    OAI --> VS1[("Vector Store: sistema A")]
-    OAI --> VS2[("Vector Store: sistema B")]
+    OAI --> VS[("Vector Store: SRD 5.2.1")]
     CMD["CLI de ingestão (Python)"] -->|"upload do PDF"| OAI
 ```
 

@@ -9,10 +9,10 @@ Sessão de planejamento inicial: **2026-11-16**.
 
 | # | Decisão | Status |
 |---|---|---|
-| D01 | Chatbot de regras e criação de personagens de RPG, com 2 sistemas | Aceita |
-| D02 | Os 2 sistemas são bases independentes; o usuário escolhe o sistema | Aceita |
-| D03 | Um sistema com conteúdo aberto + um nacional/comercial; PDFs fora do git | Aceita (nomes pendentes) |
-| D04 | Perguntas e respostas em PT; livros no idioma original | Aceita |
+| D01 | Chatbot de regras e criação de personagens de RPG, com 2 sistemas | Substituída por D30 |
+| D02 | Os 2 sistemas são bases independentes; o usuário escolhe o sistema | Substituída por D30 |
+| D03 | Um sistema com conteúdo aberto + um nacional/comercial; PDFs fora do git | Substituída por D30 |
+| D04 | Perguntas e respostas em PT; livros no idioma original | Substituída por D29 |
 | D05 | Provider abstrato (API externa + Ollama depois) | Substituída por D18 |
 | D06 | PostgreSQL + pgvector como vector store | Substituída por D18 |
 | D07 | Pipeline de RAG próprio | Substituída por D18 |
@@ -35,29 +35,33 @@ Sessão de planejamento inicial: **2026-11-16**.
 | D24 | Deploy simples antes da avaliação (acesso remoto) | Aceita (plataforma pendente) |
 | D25 | Estrutura da pasta `/docs` | Aceita |
 | D26 | FastAPI como framework do backend | Aceita |
+| D27 | SQLAlchemy, Alembic e JWT para a fundação | Aceita |
+| D28 | Ingestão em duas etapas com IDs persistidos | Aceita |
+| D29 | Idioma de resposta configurado por sistema | Aceita |
+| D30 | MVP com um único SRD | Aceita |
+| D31 | Modelo e limites da API de chat | Aceita |
 
 ---
 
 ## D01 — Propósito do sistema
-- **Status:** Aceita
-- **Decisão:** chatbot que responde dúvidas de regras e orienta a criação de personagens de RPG de mesa, com base nos livros (PDF) de 2 sistemas.
+- **Status:** Substituída por D30
+- **Decisão original:** chatbot que responde dúvidas de regras e orienta a criação de personagens de RPG de mesa, com base nos livros (PDF) de 2 sistemas.
 
 ## D02 — Papel dos 2 sistemas
-- **Status:** Aceita
+- **Status:** Substituída por D30
 - **Contexto:** os 2 sistemas existem para avaliar melhor os resultados.
 - **Decisão:** os 2 livros são bases **independentes**. O usuário escolhe em qual sistema está perguntando e a busca considera só aquele livro.
 - **Alternativas:** o bot comparar os sistemas entre si; buscar nos dois livros ao mesmo tempo.
 - **Consequências:** as regras dos sistemas não se misturam. Dá para comparar o desempenho entre os sistemas.
 
 ## D03 — Sistemas e licenças
-- **Status:** Aceita (nomes exatos pendentes)
-- **Decisão:** um sistema com conteúdo aberto (ex.: D&D 5e SRD 5.1, CC-BY) e um nacional/comercial que o autor possui (ex.: Tormenta20, Ordem Paranormal).
-- **Consequências:** os PDFs **não** vão para o repositório git. Com D18, o livro comercial fica armazenado na OpenAI: é preciso verificar os termos de uso do livro e da OpenAI.
+- **Status:** Substituída por D30
+- **Decisão original:** um sistema com conteúdo aberto (ex.: D&D 5e SRD 5.1, CC-BY) e um nacional/comercial que o autor possui (ex.: Tormenta20, Ordem Paranormal).
+- **Situação atual:** Dungeons & Dragons SRD 5.2.1, licenciado sob CC BY 4.0, está indexado na OpenAI. Os PDFs ficam fora do repositório git.
 
 ## D04 — Idioma
-- **Status:** Aceita
-- **Decisão:** o usuário pergunta em português e o bot responde sempre em português. Os livros ficam no idioma original (o sistema aberto provavelmente em EN, o nacional em PT).
-- **Consequências:** a busca é cross-lingual. O idioma vira uma variável a observar na avaliação.
+- **Status:** Substituída por D29
+- **Decisão original:** o usuário pergunta em português e o bot responde sempre em português. Os livros ficam no idioma original.
 
 ## D05 — Provider de LLM/embeddings abstrato
 - **Status:** Substituída por D18
@@ -182,18 +186,37 @@ Sessão de planejamento inicial: **2026-11-16**.
 - **Alternativa considerada:** seguir o plano inicial com Django e DRF.
 - **Consequências:** a primeira etapa é uma API local com uma rota simples. A escolha da camada de persistência, da ferramenta de migrações e das bibliotecas de autenticação fica para a Fase 0, depois da primeira rota. O mecanismo de limitação de requisições será definido na Fase 2.
 
+## D27 — Persistência e autenticação da Fase 0
+- **Status:** Aceita em 2026-11-26
+- **Decisão:** usar SQLAlchemy 2.x com PostgreSQL via Psycopg, migrações Alembic, senhas com Argon2 via pwdlib e tokens JWT HS256 via PyJWT. O cadastro e o login usam JSON. Access tokens duram 15 minutos e refresh tokens, 7 dias.
+- **Consequências:** testes de API usam SQLite em memória e substituem a sessão do banco. A chave JWT vem de `JWT_SECRET_KEY` e precisa ter pelo menos 32 caracteres. Nesta fase, refresh tokens não são revogados nem rotacionados; isso exige estado adicional se necessário depois.
+
+## D28 — Ingestão em duas etapas com IDs persistidos
+- **Status:** Aceita em 2026-11-26
+- **Decisão:** o comando local registra cada sistema no PostgreSQL; ao ingerir um PDF, cria um Vector Store para o sistema caso ainda não exista, envia o arquivo à OpenAI, salva o `file_id` e aguarda a indexação pelo SDK. O `vector_store_id` é salvo antes do upload e o `file_id` antes da indexação. A estratégia de chunking retornada e o status final são registrados em `Document`.
+- **Consequências:** falhas ficam registradas no banco e os testes substituem a OpenAI por um cliente falso. Reexecutar a ingestão cria um novo registro e pode enviar o arquivo novamente; o operador deve consultar o histórico antes de repetir o comando.
+
+## D29 — Idioma de resposta por sistema
+- **Status:** Aceita em 2026-11-26
+- **Decisão:** registrar separadamente `language` (idioma do livro) e `response_language` (idioma das respostas). Para Dungeons & Dragons SRD 5.2.1, ambos são `en`. O chat usa `response_language` no prompt para responder em inglês. O padrão para novos sistemas continua `pt-BR`, até decisão específica.
+- **Consequências:** a regra antiga de resposta sempre em português (D04) deixa de valer.
+
+## D30 — MVP com um único SRD
+- **Status:** Aceita em 2026-11-26
+- **Decisão:** entregar e avaliar o MVP apenas com o PDF do Dungeons & Dragons SRD 5.2.1. Os planos de dois sistemas e de livro comercial (D01–D03) deixam de ser requisitos para concluir as fases. A estrutura de banco continua capaz de receber outros sistemas no futuro.
+- **Consequências:** a Fase 1 está concluída com um Vector Store; o roteiro e a análise da avaliação não comparam sistemas.
+
+## D31 — Modelo e limites da API de chat
+- **Status:** Aceita em 2026-11-26
+- **Decisão:** usar `gpt-6-luna` por padrão, configurável por `OPENAI_MODEL`. Enviar as últimas 10 mensagens, pedir até 5 resultados de File Search e limitar a resposta a 1200 tokens. Forçar uma chamada de File Search e recusar quando nenhum trecho do arquivo registrado sustentar a resposta. Limitar a 30 perguntas por usuário em uma hora, configurável por `CHAT_REQUESTS_PER_HOUR`. Guardar o histórico no PostgreSQL e chamar a Responses API com `store=False`.
+- **Consequências:** o controle de uso é compartilhado entre instâncias via PostgreSQL. O orçamento mensal total fica para a configuração de produção da Fase 5. O `response_id` é guardado para diagnóstico, mas a resposta não fica armazenada na OpenAI para consulta posterior.
+
 ---
 
 ## Pendências
 
 | Pendência | Impacta | Quando resolver |
 |---|---|---|
-| Nomes exatos dos 2 sistemas e versão dos livros | D03, D04 | Antes da Fase 1 |
-| Camada de persistência, ferramenta de migrações e bibliotecas de autenticação | D12, D26 | Fase 0, depois da primeira rota |
-| Verificar os termos de uso do livro comercial e da OpenAI (armazenamento e retenção de dados) | D03, D18 | Antes da Fase 1 |
-| Qual modelo da OpenAI usar e o orçamento mensal | D18, D12 | Antes da Fase 2 |
-| Valores de N (janela de mensagens) e `max_num_results` | D18, D21 | Fase 2 |
-| Mecanismo de throttling e limite de requisições por usuário | D12, D26 | Fase 2 |
+| Definir orçamento mensal total da OpenAI | D18, D31 | Antes do deploy da Fase 5 |
 | Alinhar o método de avaliação com o orientador: consentimento (TCLE), necessidade de comitê de ética e LGPD dos dados dos participantes | D22 | Antes da Fase 6 |
 | Plataforma de deploy | D24 | Antes da Fase 5 |
-| Adicionar PDFs e a pasta de dados ao `.gitignore` (hoje não estão ignorados) | D03 | Fase 0 |
